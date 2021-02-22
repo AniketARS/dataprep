@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import SGDClassifier, LogisticRegression, Perceptron
 from sklearn.ensemble import RandomForestClassifier
@@ -39,11 +40,19 @@ class Preprocessor(object):
                     temp_df = temp_df.drop(col, axis=1)
         temp_df.describe().to_csv('./dataset/stats.csv')
 
-    def encode(self, df: pd.DataFrame, columns: list, en_type: str):
+    def encode(self, df: pd.DataFrame, columns: list, en_type: str = 'label', drop_one: bool = False):
         new_df = df.copy()
-        for col in columns:
-            self._encoder_map[col] = self._type_map['encoder'][en_type]()
-            new_df[col] = self._encoder_map[col].fit_transform(new_df[col])
+        if en_type == 'label':
+            for col in columns:
+                self._encoder_map[col] = self._type_map['encoder'][en_type]()
+                new_df[col] = self._encoder_map[col].fit_transform(new_df[col])
+        elif en_type == 'onehot':
+            new_df = pd.get_dummies(new_df, columns=columns, prefix=columns)
+            if drop_one:
+                cols = new_df.columns
+                r = re.compile(columns[0] + '_*')
+                to_del = list(filter(r.match, cols))[0]
+                new_df = new_df.drop(to_del, axis=1)
         return new_df
 
     def scale(self, df: pd.DataFrame, columns: list, scale_type: str):
